@@ -1,0 +1,17 @@
+body {
+	padding: 10px;
+}
+
+.hangman {
+	height: 200px;
+}
+
+.login {
+	text-align: right;
+}
+
+
+.fields {
+	font-size: 24px;
+
+}
