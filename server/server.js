@@ -140,7 +140,7 @@ Meteor.methods({
   	if (!letter) return;
 
   	if (_.contains(game().guessed, letter)){
-  		return notify(userId, 'info', 'You already tried that letter.');
+  		return notify(this.userId, 'info', 'You already tried that letter.');
   	}
 
 		Games.update(game()._id, {'$push': {guessed: letter}});

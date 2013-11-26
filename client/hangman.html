@@ -14,6 +14,8 @@
         {{> hangman }}
         {{> hud }}
       </div>
+
+      {{> fields }}
     </div>
 
     {{> analytics }}
@@ -25,7 +27,6 @@
   <div class="col-xs-6">
     {{#if show}}
       <div class="hangman fault-{{ wrong }}"></div>
-      {{> fields }}
     {{/if}}
   </div>
 </template>
@@ -108,8 +109,8 @@
 <template name="fields">
   {{#if show}}
     <div class="fields">
-      <ol class="list-unstyled list-inline">
-        {{#each placeholders }}
+      {{#each placeholders }}
+        <ol class="list-unstyled list-inline">
           {{#each this}}
             <li>
               {{#if answered}}
@@ -119,9 +120,8 @@
               {{/if}}
             </li>
           {{/each}}
-          <li></li>
-        {{/each}}
-      </ol>
+        </ol>
+      {{/each}}
     </div>
     {{> hint}}
   {{/if}}
