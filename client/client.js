@@ -53,6 +53,8 @@ Template.hud.points = function(){
   return player.profile.points || 0;
 };
 
+Template.hud.im_master = im_master;
+
 Template.hud.timeLeft = function(){
   return game().clock;
 };

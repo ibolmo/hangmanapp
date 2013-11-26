@@ -17,7 +17,7 @@ Meteor.publish('notifications', function(){
 });
 
 var CLOCK_TIMEOUT = 9;
-var WAIT_MAX = 5 * CLOCK_TIMEOUT;
+var WAIT_MAX = 3 * CLOCK_TIMEOUT;
 
 Meteor.startup(function(){
 	if (!game()) initialize();
@@ -58,7 +58,7 @@ function pick_master_from_active(){
 function check_master(){
 	if (!game().master){
 		pick_master_from_active();
-	} else {
+	} else if (!game().ready)  {
 		Games.update(game()._id, {'$inc': {waiting: 1}});
 		if (game().waiting >= WAIT_MAX){
 			notify(game().master, 'danger', 'You were demoted');

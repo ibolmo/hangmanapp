@@ -58,7 +58,14 @@
         <dd>{{ points }}</dd>
 
         <dt>Time</dt>
-        <dd>{{ timeLeft }} seconds</dd>
+        <dd>
+          {{ timeLeft }} seconds
+          {{# if im_master}}
+            {{# if game.waiting}}
+              <br><small> {{ game.waiting }} seconds waiting</small>
+            {{/if}}
+          {{/if}}
+          </dd>
 
         <dt>Status</dt>
         <dd>{{ status }}</dd>
