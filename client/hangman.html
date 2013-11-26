@@ -19,8 +19,10 @@
 
 <template name="hangman">
   <div class="col-xs-6">
-    <div class="hangman fault-{{ wrong }}"></div>
-    {{> fields }}
+    {{#if show}}
+      <div class="hangman fault-{{ wrong }}"></div>
+      {{> fields }}
+    {{/if}}
   </div>
 </template>
 
@@ -58,7 +60,11 @@
         <dd>{{ status }}</dd>
       </dl>
 
-      {{> input }}
+      {{#if game.ready}}
+        {{> input }}
+      {{else}}
+        {{> prepare}}
+      {{/if}}
 
     {{else}}
       <p>
@@ -68,28 +74,53 @@
   </div>
 </template>
 
+<template name="prepare">
+  {{#if show}}
+    <div id="prepare">
+      <p>You're turn to pick the solution and hint for the next hangman.</p>
+      <form role="form">
+        <div class="form-group">
+          <label for="solution">Solution</label>
+          <input type="text" class="form-control" id="solution" placeholder="Enter solution">
+          <span class="help-block"></span>
+        </div>
+        <div class="form-group">
+          <label for="hint">Hint</label>
+          <input type="text" class="form-control" id="hint" placeholder="Hint">
+          <span class="help-block"></span>
+        </div>
+        <button type="submit" class="btn btn-default">Submit</button>
+      </form>
+    </div>
+  {{/if}}
+</template>
+
 <template name="fields">
-  <div class="fields">
-    <ol class="list-unstyled list-inline">
-      {{#each placeholders }}
-        {{#each this}}
-          <li>
-            {{#if answered}}
-              {{character}}
-            {{else}}
-              _
-            {{/if}}
-          </li>
+  {{#if show}}
+    <div class="fields">
+      <ol class="list-unstyled list-inline">
+        {{#each placeholders }}
+          {{#each this}}
+            <li>
+              {{#if answered}}
+                {{character}}
+              {{else}}
+                _
+              {{/if}}
+            </li>
+          {{/each}}
+          <li></li>
         {{/each}}
-        <li></li>
-      {{/each}}
-    </ol>
-  </div>
-  {{> hint}}
+      </ol>
+    </div>
+    {{> hint}}
+  {{/if}}
 </template>
 
 <template name="hint">
-  <h2>Hint: <small>{{ hint }}</small></h2>
+  {{#if show}}
+    <h2>Hint: <small>{{ hint }}</small></h2>
+  {{/if}}
 </template>
 
 <template name="navigation">

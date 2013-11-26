@@ -1,9 +1,19 @@
-var DEFAULTS = [
-	{solution: 'Tech Tuesdays', hint: 'event'},
-	{solution: 'Rio Grande Valley', hint: 'location'},
-	{solution: 'UTPA', hint: 'school'},
-	{solution: 'Last Tuesday', hint: 'day'}
-];
+Meteor.publish('games', function(){
+	return Games.find({}, {
+		fields: {
+			active: 1,
+			master: 1,
+			faults: 1,
+			clock: 1,
+			ready: 1,
+			placeholders: 1
+		}
+	});
+});
+
+Meteor.publish('notifications', function(){
+	return Notifications.find();
+});
 
 var CLOCK_TIMEOUT = 9;
 
@@ -12,42 +22,52 @@ Meteor.startup(function(){
 	Meteor.setInterval(tick, 1000);
 });
 
-function initialize(){
+function initialize(master){
 	if (game()) Games.remove(game()._id);
 
-	var starting = _.shuffle(DEFAULTS)[0];
 	Games.insert({
-		master: null,
+		master: master && master._id,
 		active: null,
 		guessed: [],
 		faults: 0,
-		solution: starting.solution,
-		placeholders: create_placeholders(starting.solution),
-		hint: starting.hint,
+		status: 'Preparing the game.',
+		solution: '',
+		ready: false,
+		placeholders: [],
+		hint: '',
 		clock: CLOCK_TIMEOUT
 	});
 }
 
 function tick(){
+	if (!game()) initialize();
 	check_master();
-	check_active();
+	if (game().solution) check_active();
 	check_clock();
 
-	Games.update(game()._id, {'$inc': {clock: -1}});
+  Games.update(game()._id, {'$inc': {clock: -1}});
+}
+
+function pick_master_from_active(){
+	initialize(get_random_active_user());
 }
 
 function check_master(){
-	return game().master;
+	if (!game().master) pick_master_from_active();
 }
 
 function check_active(){
 	var active = game().active;
 	if (!active){
-		var recent = {'profile.last_seen': {'$gt': Date.now() - 10000}};
-		var count = Meteor.users.find(recent).count();
-		active = Meteor.users.findOne(recent, {skip: _.random(0, count - 1)});
+		active = get_random_active_user();
 		if (active) Games.update(game()._id, {'$set': {active: active._id}});
 	}
+}
+
+function get_random_active_user() {
+	var recent = {'profile.last_seen': {'$gt': Date.now() - 10000}, '_id': {'$ne': game().master}};
+	var count = Meteor.users.find(recent).count();
+	return Meteor.users.findOne(recent, {skip: _.random(0, count - 1)})
 }
 
 function check_clock(){
@@ -100,7 +120,7 @@ Meteor.methods({
   guess: function(letter){
   	check(letter, String);
 
-  	letter = trim(letter).toLowerCase();
+  	letter = trim_all(letter).toLowerCase();
   	if (!letter) return;
 
   	if (_.contains(game().guessed, letter)){
@@ -123,6 +143,32 @@ Meteor.methods({
 
   clearNotifications: function(){
   	Notifications.remove({user_id: this.userId});
+  },
+
+  prepare_game: function(solution, hint){
+  	var errors = {};
+  	solution = trim_except_space(solution), hint = trim_except_space(hint);
+  	check(solution, String);
+  	check(hint, String);
+  	if (!solution) errors.solution = 'Missing';
+  	if (!hint) errors.hint = 'Missing';
+  	if (solution.length > 'rio grande valley'.length) errors.solution = 'Too long.';
+  	if (hint.length > 'rio grande valley'.length) errors.hint = 'Too long.';
+
+  	if (!errors.solution  && !errors.hint){
+			Games.update(game()._id, {
+				'$set': {
+					status: 'Starting game.',
+					solution: solution,
+					ready: true,
+					hint: hint,
+					placeholders: create_placeholders(solution),
+					clock: CLOCK_TIMEOUT
+				}
+			});
+  	}
+
+		return errors;
   }
 });
 
@@ -138,10 +184,6 @@ function update_placeholders_and_score_for_user_id(letter, userId){
 	});
   Games.update(game()._id, {'$set': {placeholders: placeholders}});
   return placeholders;
-}
-
-function trim(letter){
-	return letter.replace(/[^a-zA-Z]/g, "");
 }
 
 function solution_has_letter(letter){
