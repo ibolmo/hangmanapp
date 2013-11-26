@@ -7,7 +7,8 @@ Meteor.publish('games', function(){
 			clock: 1,
 			ready: 1,
 			placeholders: 1,
-			waiting: 1
+			waiting: 1,
+			hint: 1
 		}
 	});
 });
@@ -17,7 +18,7 @@ Meteor.publish('notifications', function(){
 });
 
 var CLOCK_TIMEOUT = 9;
-var WAIT_MAX = 3 * CLOCK_TIMEOUT;
+var WAIT_MAX = 4 * CLOCK_TIMEOUT;
 
 Meteor.startup(function(){
 	if (!game()) initialize();
@@ -61,7 +62,7 @@ function check_master(){
 	} else if (!game().ready)  {
 		Games.update(game()._id, {'$inc': {waiting: 1}});
 		if (game().waiting >= WAIT_MAX){
-			notify(game().master, 'danger', 'You were demoted');
+			notify(game().master, 'danger', "You didn't set the solution/hint in time.");
 			pick_master_from_active();
 		}
 	}
