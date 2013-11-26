@@ -59,13 +59,12 @@
 
         <dt>Time</dt>
         <dd>
-          {{ timeLeft }} seconds
-          {{# if im_master}}
-            {{# if game.waiting}}
-              <br><small> {{ game.waiting }} seconds waiting</small>
-            {{/if}}
+          {{# if imMasterAndWaiting }}
+            {{ game.waiting }} seconds waiting
+          {{else}}
+            {{ timeLeft }} seconds
           {{/if}}
-          </dd>
+        </dd>
 
         <dt>Status</dt>
         <dd>{{ status }}</dd>

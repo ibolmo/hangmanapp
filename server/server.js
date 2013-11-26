@@ -177,6 +177,7 @@ Meteor.methods({
 					solution: solution,
 					ready: true,
 					hint: hint,
+					waiting: 0,
 					placeholders: create_placeholders(solution),
 					clock: CLOCK_TIMEOUT
 				}
