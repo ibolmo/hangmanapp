@@ -6,16 +6,18 @@ Meteor.publish('games', function(){
 			faults: 1,
 			clock: 1,
 			ready: 1,
-			placeholders: 1
+			placeholders: 1,
+			waiting: 1
 		}
 	});
 });
 
 Meteor.publish('notifications', function(){
-	return Notifications.find();
+	return Notifications.find({user_id: this.userId});
 });
 
 var CLOCK_TIMEOUT = 9;
+var WAIT_MAX = 5 * CLOCK_TIMEOUT;
 
 Meteor.startup(function(){
 	if (!game()) initialize();
@@ -35,14 +37,15 @@ function initialize(master){
 		ready: false,
 		placeholders: [],
 		hint: '',
-		clock: CLOCK_TIMEOUT
+		clock: CLOCK_TIMEOUT,
+		waiting: 0
 	});
 }
 
 function tick(){
 	if (!game()) initialize();
 	check_master();
-	if (game().solution) check_active();
+	if (game().ready) check_active();
 	check_clock();
 
   Games.update(game()._id, {'$inc': {clock: -1}});
@@ -53,7 +56,15 @@ function pick_master_from_active(){
 }
 
 function check_master(){
-	if (!game().master) pick_master_from_active();
+	if (!game().master){
+		pick_master_from_active();
+	} else {
+		Games.update(game()._id, {'$inc': {waiting: 1}});
+		if (game().waiting >= WAIT_MAX){
+			notify(game().master, 'danger', 'You were demoted');
+			pick_master_from_active();
+		}
+	}
 }
 
 function check_active(){
@@ -94,13 +105,17 @@ function reset_clock() {
 
 function lose_game(userId){
 	check(userId, String);
-	Notifications.insert({user_id: userId, type: 'danger', message: 'You lose.'});
+	notify(userId, 'danger', 'You lost.');
 	Meteor.setTimeout(initialize, 2000);
+}
+
+function notify(userId, type, message){
+	Notifications.insert({user_id: userId, type: type, message: message});
 }
 
 function win_game(userId) {
 	check(userId, String);
-	Notifications.insert({user_id: userId, type: 'success', message: 'You win!'});
+	notify(userId, 'success', 'You win!');
 	Meteor.users.update({_id: userId}, {'$inc': {'profile.points': 10}});
 	Meteor.setTimeout(initialize, 2000);
 }
@@ -110,6 +125,7 @@ function next_opponent(){
 }
 
 Meteor.methods({
+
   keepalive: function (user_id){
   	check(user_id, String);
     if (Meteor.users.findOne(user_id)){
@@ -124,8 +140,7 @@ Meteor.methods({
   	if (!letter) return;
 
   	if (_.contains(game().guessed, letter)){
-  		Notifications.insert({user_id: this.userId, type: 'info', message: 'You already tried that letter.'});
-  		return;
+  		return notify(userId, 'info', 'You already tried that letter.');
   	}
 
 		Games.update(game()._id, {'$push': {guessed: letter}});
@@ -169,6 +184,10 @@ Meteor.methods({
   	}
 
 		return errors;
+  },
+
+  getActiveUsersCount: function(){
+  	return Meteor.users.find({'profile.last_seen': {'$gt': Date.now() - 10000}}).count();
   }
 });
 

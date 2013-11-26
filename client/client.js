@@ -1,12 +1,23 @@
 Meteor.subscribe('games');
 Meteor.subscribe('notifications');
 
+Meteor.setInterval(updateCount, 5000);
+Meteor.startup(function(){
+  updateCount();
+});
+
 function my_turn(){
   return game().active == Meteor.userId();
 }
 
 function im_master(){
   return game().master == Meteor.userId();
+}
+
+function updateCount() {
+  Meteor.call('getActiveUsersCount', function(error, result){
+    $('#count').text(result);
+  });
 }
 
 Template.announcement.announcements = function(){
@@ -48,7 +59,7 @@ Template.hud.timeLeft = function(){
 
 Template.hud.status = function(){
   if (my_turn()) return 'Your turn.';
-  if (im_master()) return game().ready ? 'Prepare the game.' : 'Waiting for round to end.';
+  if (im_master()) return game().ready ? 'Waiting for round to end.' : 'Prepare the game.';
   return 'Waiting for your turn.';
 };
 
