@@ -43,7 +43,7 @@ function check_master(){
 function check_active(){
 	var active = game().active;
 	if (!active){
-		var recent = {last_seen: {$gt: Date.now() - 10000}};
+		var recent = {'profile.last_seen': {'$gt': Date.now() - 10000}};
 		var count = Meteor.users.find(recent).count();
 		active = Meteor.users.findOne(recent, {skip: _.random(0, count - 1)});
 		if (active) Games.update(game()._id, {'$set': {active: active._id}});
@@ -72,14 +72,17 @@ function reset_clock() {
 	Games.update(game()._id, {'$set': {clock: CLOCK_TIMEOUT}});
 }
 
-function lose_game(){
-	console.log('lost');
-	initialize();
+function lose_game(userId){
+	check(userId, String);
+	Notifications.insert({user_id: userId, type: 'danger', message: 'You lose.'});
+	Meteor.setTimeout(initialize, 2000);
 }
 
-function win_game() {
-	console.log('won');
-	initialize();
+function win_game(userId) {
+	check(userId, String);
+	Notifications.insert({user_id: userId, type: 'success', message: 'You win!'});
+	Meteor.users.update({_id: userId}, {'$inc': {'profile.points': 10}});
+	Meteor.setTimeout(initialize, 2000);
 }
 
 function next_opponent(){
@@ -90,7 +93,7 @@ Meteor.methods({
   keepalive: function (user_id){
   	check(user_id, String);
     if (Meteor.users.findOne(user_id)){
-			Meteor.users.update(user_id, {$set: {last_seen: Date.now()}});
+			Meteor.users.update(user_id, {$set: {'profile.last_seen': Date.now()}});
     }
   },
 
@@ -101,28 +104,41 @@ Meteor.methods({
   	if (!letter) return;
 
   	if (_.contains(game().guessed, letter)){
-  		Session.set('notice', 'You already tried that letter.');
+  		Notifications.insert({user_id: this.userId, type: 'info', message: 'You already tried that letter.'});
+  		return;
   	}
 
 		Games.update(game()._id, {'$push': {guessed: letter}});
 
   	if (solution_has_letter(letter)){
-  		var placeholders = game().placeholders.map(function(word){
-  			return word.map(function(character){
-  				if (character.character.toLowerCase() == letter) character.answered = true;
-  				return character;
-  			});
-  		});
-  		Games.update(game()._id, {'$set': {placeholders: placeholders}});
-  		if (solved(placeholders)) return win_game();
+  		var placeholders = update_placeholders_and_score_for_user_id(letter, this.userId);
+  		if (solved(placeholders)) return win_game(this.userId);
   	} else {
-  		if (game().faults == 9) return lose_game();
   		Games.update(game()._id, {'$inc': {faults: 1}});
+  		if (game().faults == 9) return lose_game(this.userId);
   	}
 
   	reset_clock();
+  },
+
+  clearNotifications: function(){
+  	Notifications.remove({user_id: this.userId});
   }
 });
+
+function update_placeholders_and_score_for_user_id(letter, userId){
+	var placeholders = game().placeholders.map(function(word){
+		return word.map(function(character){
+			if (character.character.toLowerCase() == letter){
+				character.answered = true;
+				Meteor.users.update({_id: userId}, {'$inc': {'profile.points': 1}});
+			}
+			return character;
+		});
+	});
+  Games.update(game()._id, {'$set': {placeholders: placeholders}});
+  return placeholders;
+}
 
 function trim(letter){
 	return letter.replace(/[^a-zA-Z]/g, "");

@@ -3,13 +3,43 @@ body {
 }
 
 .hangman {
+	width: 146px;
 	height: 200px;
+	background: url(/hangman.png) no-repeat 146px 0;
+}
+
+.hangman.fault-0 { background-position: 0 0; }
+.hangman.fault-1 { background-position: -146px 0; }
+.hangman.fault-2 { background-position: -292px 0; }
+.hangman.fault-3 { background-position: -438px 0; }
+.hangman.fault-4 { background-position: -584px 0; }
+.hangman.fault-5 { background-position: -730px 0; }
+.hangman.fault-6 { background-position: -876px 0; }
+.hangman.fault-7 { background-position: -1022px 0; }
+.hangman.fault-8 { background-position: -1168px 0; }
+.hangman.fault-9 { background-position: -1314px 0; }
+
+#announcements {
+	position: relative;
+	z-index: 100;
+	opacity: 0.75;
+}
+
+.alert {
+	position: absolute;
+	left: 0;
+	right: 0;
+	text-align: center;
+	font-size: 24px;
 }
 
 .login {
 	text-align: right;
 }
 
+#input input {
+	width: 100%;
+}
 
 .fields {
 	font-size: 24px;

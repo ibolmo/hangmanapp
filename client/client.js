@@ -2,9 +2,21 @@ function my_turn(){
   return game().active == Meteor.userId();
 }
 
-Template.hangman.show = function(){
-  return game().faults;
+Template.announcement.announcements = function(){
+  return Notifications.find({user_id: Meteor.userId()});
 };
+
+Template.announcement.rendered = function(){
+  $(this.find('.alert')).delay(2000).fadeOut(500, function(){
+    Meteor.call('clearNotifications');
+  });
+};
+
+Template.announcement.events({
+  'click button': function(){
+    Meteor.call('clearNotifications');
+  }
+});
 
 Template.hangman.wrong = function(){
   return game().faults;
@@ -16,7 +28,7 @@ Template.hud.show = function(){
 
 Template.hud.points = function(){
   var player = Meteor.user();
-  return player.points || 0;
+  return player.profile.points || 0;
 };
 
 Template.hud.timeLeft = function(){
@@ -56,10 +68,6 @@ Template.hint.hint = function(){
 Template.login.show = function(){
   return !!Meteor.user();
 };
-
-Meteor.startup(function(){
-
-});
 
 Meteor.setInterval(function () {
   Meteor.call('keepalive', Meteor.userId());
